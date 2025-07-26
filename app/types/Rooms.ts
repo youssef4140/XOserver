@@ -1,9 +1,9 @@
-import GameManager from "../src/services/GameManager";
-
 interface Room  {
-    players: string[];
+    players: Record<string, 'X' | 'O'>;
     ready:boolean;
-    game?: GameManager;
+    playerCount: number;
+    id:string;
+    // game?: GameManager;
 }
 
 interface Result  {
