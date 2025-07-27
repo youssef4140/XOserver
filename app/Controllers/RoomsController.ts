@@ -1,20 +1,16 @@
 import { Server, Socket } from 'socket.io';
-import rooms from '../services/RoomManager';
-import connections from '../services/ConnectionManager';
+import rooms from '../Models/RoomModel';
+import connections from '../Models/ConnectionModels';
 export default {
     createRoom(socket: Socket) {
         try {
-            const roomId = rooms.create();
-            rooms.join(roomId, socket.id);
-            connections.update(socket.id, roomId);
-            socket.join(roomId);
-            let room = rooms.get(roomId);
-
+            const room = rooms.createAndJoin(socket.id);
+            connections.update(socket.id, room.id);
+            socket.join(room.id);
             socket.emit('roomCreated', { room: room });
         } catch (error) {
             console.error((error as Error).message);
             socket.emit('error', { message: (error as Error).message });
-            return;
         }
     },
 
@@ -24,7 +20,7 @@ export default {
             rooms.join(roomId, socket.id);
             let oldRoomId = connections.getRoomID(socket.id);
             if (oldRoomId) {
-                rooms.removePlayer(oldRoomId, socket.id);
+                rooms.leave(oldRoomId, socket.id);
                 io.to(roomId).emit('playerLeft', { room: rooms.get(roomId) })
 
             }
@@ -35,15 +31,14 @@ export default {
                 throw new Error(`Room ${roomId} does not exist.`);
             }
             io.to(roomId).emit('roomUpdated', { room: room })
-
+            console.clear()
+            console.log(connections.connections)
 
 
             if (room.ready) {
-                Object.keys(room.players).forEach((p)=>{
-                    io.sockets.to(p).emit('roomReady',{ room: room, sign: room.players[p] })
+                Object.keys(room.players).forEach((p) => {
+                    io.sockets.to(p).emit('roomReady', { room: room, sign: room.players[p] })
                 })
-                // socket.to(roomId).emit('roomReady', { room: room, sign: room.players[socket.id] });
-                
             }
 
         } catch (error) {
@@ -52,6 +47,20 @@ export default {
             return;
         }
     },
+    newGame(socket: Socket, io: Server) {
+        console.log('play again from room controller')
+        let roomId = connections.getRoomID(socket.id);
+        if (!roomId) throw new Error(`Room ${roomId} does not exist.`);
+        let room = rooms.get(roomId);
+        if (!room) throw new Error(`Room ${roomId} does not exist.`);
+        let { game, players } = room.newGame();
+        console.log(game, 'before sending')
+        Object.keys(players).forEach((p) => {
+            io.sockets.to(p).emit('newGame', { game: game, sign: players[p] })
+        })
+
+    },
+
     disconnect(socket: Socket, io: Server) {
         let roomId = connections.getRoomID(socket.id);
 
@@ -60,7 +69,7 @@ export default {
             console.warn(`No room found for socket ID: ${socket.id}`);
             return;
         }
-        let room = rooms.removePlayer(roomId, socket.id);
+        let room = rooms.leave(roomId, socket.id);
         io.to(roomId).emit('playerLeft', { room: room })
 
     }

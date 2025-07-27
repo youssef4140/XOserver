@@ -1,6 +1,7 @@
 import { Server, Socket } from 'socket.io';
-import connections from '../services/ConnectionManager';
-import roomsController from '../Controllers/RoomsController';
+import connections from '../Models/ConnectionModels';
+import RoomsController from '../Controllers/RoomsController';
+import GameController from '../Controllers/GameController';
 
 
 
@@ -12,11 +13,14 @@ export default function listenForEvents(io: Server) {
 
         console.log(connections.connections);
 
-        socket.on('createRoom', () => roomsController.createRoom(socket));
+        socket.on('createRoom', () => RoomsController.createRoom(socket));
 
-        socket.on('joinRoom', (roomId: string) => roomsController.joinRoom(socket, roomId,io));
+        socket.on('joinRoom', (roomId: string) => RoomsController.joinRoom(socket, roomId,io));
 
-        socket.on('disconnect', () => roomsController.disconnect(socket,io));
+        socket.on('disconnect', () => RoomsController.disconnect(socket,io));
 
+        socket.on('tik',(index:number)=> GameController.tik(index,socket,io));
+
+        socket.on('playAgain',()=>RoomsController.newGame(socket,io))
     })
 }
