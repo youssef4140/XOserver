@@ -1,5 +1,6 @@
 import { Socket } from "socket.io";
-import { Room } from "../types/Rooms";
+import { Room } from "../types/Types";
+import Game from "./Game";
 
 export default {
     rooms: {} as Record<string, Room>,
@@ -27,11 +28,15 @@ export default {
         if (Object.keys(room.players).includes(playerId)) return room;
         let useSign: 'X' | 'O' = this.useSign(room.players);
 
-        this.rooms[roomId].players[playerId] = useSign;
+        room.players[playerId] = useSign;
         room.playerCount++;
         room.ready = this.checkReady(roomId)
-        // console.clear()
-        // console.log(this.rooms[roomId])
+
+        if (room.ready) {
+            room.game = new Game;
+        }
+        console.log(room);
+
         return room;
 
     },
@@ -44,8 +49,10 @@ export default {
         this.rooms[roomId].playerCount--;
         if (this.rooms[roomId].playerCount <= 0) this.delete(roomId);
         room.ready = this.checkReady(roomId)
+        if (!room.ready) {
+            delete room.game
+        }
 
-        // console.log(this.rooms[roomId])
 
         return this.rooms[roomId];
 
@@ -71,7 +78,8 @@ export default {
     delete(roomId: string) {
         delete this.rooms[roomId];
     },
-    checkReady(roomId: string) {
-        return (this.rooms[roomId].playerCount === 2)
+    checkReady(roomId: string):boolean {
+        let room = this.rooms[roomId];
+        return !!(room && room.playerCount && room.playerCount === 2)
     }
 }

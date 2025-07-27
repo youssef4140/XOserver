@@ -1,9 +1,15 @@
+import Game from "../services/Game";
+
+interface Tile {
+    symbol: 'X' | 'O' | null,
+    turns:number
+}
 interface Room  {
     players: Record<string, 'X' | 'O'>;
     ready:boolean;
     playerCount: number;
     id:string;
-    // game?: GameManager;
+    game?: Game;
 }
 
 interface Result  {
